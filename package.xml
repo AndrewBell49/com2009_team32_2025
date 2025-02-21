@@ -4,10 +4,15 @@
   <name>com2009_team32_2025</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="your.name@sheffield.ac.uk">Name</maintainer>
+  <maintainer email="abell11@sheffield.ac.uk">Andrew Bell</maintainer>
+  <maintainer email="melleithy1@sheffield.ac.uk">Moaz Elleithy</maintainer>
+  <maintainer email="nhutchings1@sheffield.ac.uk">Nathan Hutchings</maintainer>
+
   <license>TODO: License declaration</license>
 
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>

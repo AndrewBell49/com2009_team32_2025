@@ -34,7 +34,7 @@ ament_python_install_package(${PROJECT_NAME}_modules)
 
 # Install Python executables
 install(PROGRAMS
-  scripts/minimal_node.py
+  scripts/task1.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
