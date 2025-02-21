@@ -7,7 +7,7 @@ from rclpy.signals import SignalHandlerOptions
 from geometry_msgs.msg import Twist 
 from nav_msgs.msg import Odometry 
 
-from part2_navigation_modules.tb3_tools import quaternion_to_euler 
+from com2009_team32_2025_modules.tb3_tools import quaternion_to_euler 
 from math import sqrt, pow, pi 
 
 class Square(Node):
