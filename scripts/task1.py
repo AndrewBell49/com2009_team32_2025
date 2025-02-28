@@ -21,13 +21,15 @@ class FigureEight(Node):
 
         self.vel_msg = Twist() 
         
-        self.x = 0.0; self.y = 0.0; self.theta_z = 0.0
-        self.xref = 0.0; self.yref = 0.0; self.theta_zref = 0.0
-        
-        self.yaw = 0.0 
-        self.displacement = 0.0 
+        self.x = 0.0; self.y = 0.0; self.yaw = 0.0
+        self.xstart = 0.0; self.ystart = 0.0; self.yawstart = 0.0
 
-        self.turnCount = 0
+        self.second_loop = False
+        self.within_start = True
+        self.final_stop = False
+
+        self.start_range = 0.1
+        self.min_from_start = self.start_range
 
         self.vel_pub = self.create_publisher(
             msg_type=Twist,
@@ -66,44 +68,61 @@ class FigureEight(Node):
 
         self.x = pose.position.x 
         self.y = pose.position.y
-        self.theta_z = yaw
+        self.yaw = yaw*(180/pi)
 
         if not self.first_message: 
             self.first_message = True
-            self.xref = self.x
-            self.yref = self.y
-            self.theta_zref = self.theta_z
+            self.xstart = self.x
+            self.ystart = self.y
+            self.yawstart = self.yaw
 
     def timer_callback(self):
-        if self.turnCount >= 8:
-            self.vel_msg.angular.z = 0.0
-            self.vel_msg.linear.x = 0.0
+        dist_from_start = euclid_dist(self.xstart, self.ystart, self.x, self.y)
 
-        elif self.turn:
-            self.vel_msg.angular.z = 0.2
+        # first time it is out of the start range
+        if dist_from_start > self.start_range:
+            self.min_from_start = self.start_range
+            self.within_start = False
 
-            dTheta = min(abs(self.theta_z - self.theta_zref), 2*pi - abs(self.theta_z - self.theta_zref))
+            if self.second_loop:
+                self.final_stop = True
 
-            if dTheta >= pi/2:
-                # stop robot turning
-                self.vel_msg.angular.z = 0.0
-                self.turn = False
-                # save location references
-                self.xref = self.x
-                self.yref = self.y
-            
+        radius = 0.5 # m
+        time = 55 # s
+        linear_velocity = (4*pi*radius) / time # m/s
+        angular_velocity = linear_velocity / radius
+
+        if dist_from_start <= self.start_range and not self.within_start:
+            # within range, but getting closer
+            if dist_from_start < self.min_from_start:
+                self.min_from_start = dist_from_start
+            # first time the robot gets further away from start
+            else:
+                self.second_loop = True
+                self.within_start = True
+
+        if self.second_loop and self.within_start and self.final_stop:
+            self.vel_msg = Twist()
+            self.vel_pub.publish(self.vel_msg)
+            self.get_logger().info(
+                "Stopping", 
+                throttle_duration_sec=1,
+            )
         else:
-            self.vel_msg.linear.x = 0.4
+            # opposite direction when first loop is completed
+            if self.second_loop:
+                angular_velocity *= -1
 
-            dist = euclid_dist(self.x, self.y, self.xref, self.yref)
-            if dist >= 1.0:
-                # stop robot moving
-                self.vel_msg.linear.x = 0.0
-                self.turn = True
-                # save rotation reference
-                self.theta_zref = self.theta_z
+            self.vel_msg = Twist()
+            self.vel_msg.linear.x = linear_velocity
+            self.vel_msg.angular.z = angular_velocity
 
-        self.vel_pub.publish(self.vel_msg)
+            self.vel_pub.publish(self.vel_msg)
+
+            self.get_logger().info(
+                f"x={(self.xstart - self.x):.2f} [m], y={self.ystart - self.y:.2f} [m], yaw={self.yawstart - self.yaw:.1f} [degrees].", 
+                throttle_duration_sec=1,
+            )
 
 def euclid_dist(x1, y1, x2, y2):
     return ((x1 - x2)**2 + (y1 - y2)**2)**0.5
