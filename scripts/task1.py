@@ -68,7 +68,7 @@ class FigureEight(Node):
 
         self.x = pose.position.x 
         self.y = pose.position.y
-        self.yaw = yaw*(180/pi)
+        self.yaw = abs(yaw)
 
         if not self.first_message: 
             self.first_message = True
@@ -119,8 +119,10 @@ class FigureEight(Node):
 
             self.vel_pub.publish(self.vel_msg)
 
+            dAngle = self.yaw - self.yawstart
+            dAngle *= (180/pi)
             self.get_logger().info(
-                f"x={(self.xstart - self.x):.2f} [m], y={self.ystart - self.y:.2f} [m], yaw={self.yawstart - self.yaw:.1f} [degrees].", 
+                f"x={(self.xstart - self.x):.2f} [m], y={self.ystart - self.y:.2f} [m], yaw={dAngle:.1f} [degrees].", 
                 throttle_duration_sec=1,
             )
 

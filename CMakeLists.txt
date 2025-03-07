@@ -35,8 +35,12 @@ ament_python_install_package(${PROJECT_NAME}_modules)
 # Install Python executables
 install(PROGRAMS
   scripts/task1.py
-  scripts/move_square.py
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}
 )
 
 ament_package()
