@@ -7,11 +7,12 @@
   <maintainer email="abell11@sheffield.ac.uk">Andrew Bell</maintainer>
   <maintainer email="melleithy1@sheffield.ac.uk">Moaz Elleithy</maintainer>
   <maintainer email="nhutchings1@sheffield.ac.uk">Nathan Hutchings</maintainer>
-  <maintainer email="edale2@sheffield.ac.uk">Edward Dale</maintainer\>
+  <maintainer email="edale2@sheffield.ac.uk">Edward Dale</maintainer>
 
   <license>TODO: License declaration</license>
 
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>action_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
 
@@ -22,6 +23,10 @@
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
 
   <export>
     <build_type>ament_cmake</build_type>
