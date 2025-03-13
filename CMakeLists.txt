@@ -35,12 +35,20 @@ ament_python_install_package(${PROJECT_NAME}_modules)
 # Install Python executables
 install(PROGRAMS
   scripts/task1.py
+  scripts/task2.py
+  scripts/explore_client.py
+  scripts/explore_server.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY
   launch
   DESTINATION share/${PROJECT_NAME}
+)
+
+find_package(rosidl_default_generators REQUIRED)
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/ExploreForward.action" 
 )
 
 ament_package()
