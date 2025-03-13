@@ -5,7 +5,12 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='com2009_team32_2025',
-            executable='task2.py',
-            name='task2'
+            executable='explore_client.py',
+            name='explore_client'
+        ),
+        Node(
+            package='com2009_team32_2025',
+            executable='explore_server.py',
+            name='explore_server'
         )
     ])
