@@ -9,12 +9,12 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry 
 
 from com2009_team32_2025_modules.tb3_tools import quaternion_to_euler 
-from math import pi 
+from math import pi, atan2, sin, cos
 
 class Navigation(Node):
 
     def __init__(self):
-        super().__init__("task1")
+        super().__init__("task2")
 
         self.first_message = False
         self.turn = False 
@@ -64,7 +64,7 @@ class Navigation(Node):
 
         self.x = pose.position.x 
         self.y = pose.position.y
-        self.yaw = abs(yaw)
+        self.yaw = yaw
 
         if not self.first_message: 
             self.first_message = True
@@ -75,7 +75,7 @@ class Navigation(Node):
     def timer_callback(self):
 
         if self.spinning:
-            self.spinning = self.spin_to_angle(self.yawstart + 1)
+            self.spinning = self.spin_to_angle((2*pi)/3)
         # dist_from_start = euclid_dist(self.xstart, self.ystart, self.x, self.y)
 
         # # first time it is out of the start range
@@ -143,16 +143,21 @@ class Navigation(Node):
     
         spinning = True
 
-        dTheta = min(abs(self.yaw - angle), 2*pi - abs(self.yaw - angle))
+        dTheta = angle - self.yaw
+        dTheta = atan2(sin(dTheta), cos(dTheta))
 
         self.vel_msg = Twist()
-        self.vel_msg.linear.x = 0
+        self.vel_msg.linear.x = 0.0
 
-        if dTheta < self.min_from_angle:
-            self.min_from_angle = dTheta
+        if abs(dTheta) < self.min_from_angle:
+            self.min_from_angle = abs(dTheta)
             self.vel_msg.angular.z = 0.2
+
+            # anticlockwise is the fasted way to get there 
+            if dTheta < 0:
+                self.vel_msg.angular.z *= -1
         else:
-            self.vel_msg.angular.z = 0
+            self.vel_msg.angular.z = 0.0
             spinning = False
         
         self.vel_pub.publish(self.vel_msg)
