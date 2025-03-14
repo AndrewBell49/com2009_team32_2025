@@ -63,6 +63,7 @@ class FigureEight(Node):
 
     def odom_callback(self, msg_data: Odometry):
         pose = msg_data.pose.pose 
+        print(pose)
 
         (roll, pitch, yaw) = quaternion_to_euler(pose.orientation) 
 

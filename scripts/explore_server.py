@@ -11,7 +11,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.signals import SignalHandlerOptions
 
 # Import our package's action interface:
-from part5_actions.action import ExploreForward
+from action import ExploreForward
 # Import other key ROS interfaces that this server will use:
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry

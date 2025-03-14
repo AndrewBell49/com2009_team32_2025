@@ -9,7 +9,8 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry 
 
 from com2009_team32_2025_modules.tb3_tools import quaternion_to_euler 
-from math import pi, atan2, sin, cos
+from math import pi, atan2, atan, sin, cos
+import time
 
 class Navigation(Node):
 
@@ -58,9 +59,9 @@ class Navigation(Node):
         self.shutdown = True
 
     def odom_callback(self, msg_data: Odometry):
-        pose = msg_data.pose.pose 
+        pose = msg_data.pose.pose
 
-        (roll, pitch, yaw) = quaternion_to_euler(pose.orientation) 
+        (_, _, yaw) = quaternion_to_euler(pose.orientation) 
 
         self.x = pose.position.x 
         self.y = pose.position.y
@@ -71,21 +72,17 @@ class Navigation(Node):
             self.xstart = self.x
             self.ystart = self.y
             self.yawstart = self.yaw
+        
+        self.yaw -= self.yawstart
+        self.yaw = ((self.yaw + pi) % (2 * pi)) - pi
 
     def timer_callback(self):
 
-        if self.spinning:
-            self.spinning = self.spin_to_angle((2*pi)/3)
+        self.move_to_square(9)
         # dist_from_start = euclid_dist(self.xstart, self.ystart, self.x, self.y)
 
         # # first time it is out of the start range
-        # if dist_from_start > self.start_range:
-        #     self.min_from_start = self.start_range
-        #     self.within_start = False
-
-        #     if self.second_loop:
-        #         self.final_stop = True
-
+        # if dist_from_start > self.stapose = msg_data.pose.pose 
         # radius = 0.5 # m
         # time = 55 # s
         # linear_velocity = (4*pi*radius) / time # m/s
@@ -103,78 +100,74 @@ class Navigation(Node):
         # if self.second_loop and self.within_start and self.final_stop:
         #     self.vel_msg = Twist()
         #     self.vel_pub.publish(self.vel_msg)
-        #     self.get_logger().info(
-        #         "Stopping", 
-        #         throttle_duration_sec=1,
+        #     self.get_logger().info(self.vel_msg = Twist()
         #     )
-        # else:
-        #     # opposite direction when first loop is completed
-        #     if self.second_loop:
-        #         angular_velocity *= -1
-
-        #     self.vel_msg = Twist()
-        #     self.vel_msg.linear.x = linear_velocity
-        #     self.vel_msg.angular.z = angular_velocity
-
+        # else:1
         #     self.vel_pub.publish(self.vel_msg)
-
         #     dAngle = self.yaw - self.yawstart
         #     dAngle *= (180/pi)
         #     self.get_logger().info(
-        #         f"x={(self.xstart - self.x):.2f} [m], y={self.ystart - self.y:.2f} [m], yaw={dAngle:.1f} [degrees].", 
+        #         f"x={(self.xstartself.vel_msg = Twist() - self.x):.2f} [m], y={self.ystart - self.y:.2f} [m], yaw={dAngle:.1f} [degrees].", 
         #         throttle_duration_sec=1,
         #     )
 
-    def move_to_square(self, msg_data: Odometry, square_number):        
-        square_pos = get_square_pos(square_number)
+    def move_to_square(self, square_number):        
+        square_pos = get_square_pos(square_number, self.xstart, self.ystart)
 
-        diff_x = square_pos[1] - self.x
-        diff_y = square_pos[2] - self.y
+        diff_x = square_pos[0] - self.x
+        diff_y = square_pos[1] - self.y
 
+        angle = -1 * atan(diff_x/diff_y)
 
-        linear_velocity = 0.2
-        angular_velocity = 0.2
+        if square_pos[0] <= self.x and square_pos[1] >= self.y:
+            angle *= -1
+        elif square_pos[0] <= self.x and square_pos[1] <= self.y:
+            angle = pi - angle
+        elif square_pos[0] >= self.x and square_pos[1] <= self.y:
+            angle -= pi
 
         self.vel_msg = Twist()
-        self.vel_msg.linear.x = linear_velocity
-        self.vel_msg.angular.z = angular_velocity
+        
+        self.spin_to_angle(angle)
+
+        dist_from_start = euclid_dist(square_pos[0], square_pos[1], self.x, self.y)
+        print(f'Square: {square_pos[0]:.1f}, {square_pos[1]:.1f}')
+        print(f'Self:   {self.x:.1f}, {self.y:.1f}')
+        print(f'Dist:   {dist_from_start:.1f}')
+
+        if dist_from_start > 0.1:
+            self.vel_msg.linear.x = 0.0
+        else:
+            self.vel_msg.linear.x = 0.0
+
+        self.vel_pub.publish(self.vel_msg)
 
     def spin_to_angle(self, angle):
-    
-        spinning = True
 
         dTheta = angle - self.yaw
         dTheta = atan2(sin(dTheta), cos(dTheta))
 
-        self.vel_msg = Twist()
-        self.vel_msg.linear.x = 0.0
-
         if abs(dTheta) < self.min_from_angle:
             self.min_from_angle = abs(dTheta)
-            self.vel_msg.angular.z = 0.2
+            self.vel_msg.angular.z = 1.0
 
             # anticlockwise is the fasted way to get there 
             if dTheta < 0:
                 self.vel_msg.angular.z *= -1
         else:
             self.vel_msg.angular.z = 0.0
-            spinning = False
-        
-        self.vel_pub.publish(self.vel_msg)
-
-        return spinning
 
 
 def euclid_dist(x1, y1, x2, y2):
     return ((x1 - x2)**2 + (y1 - y2)**2)**0.5
 
-def get_square_pos(square_number):
+def get_square_pos(square_number, initialX, initialY):
     coordinates = [(-1.5, 1.5), (-0.5, 1.5), (0.5, 1.5), (1.5, 1.5),
                    (1.5, 0.5), (1.5, -0.5), (1.5, -1.5), (0.5, -1.5),
                    (-0.5, -1.5), (-1.5, -1.5), (-1.5, -0.5), (-1.5, 0.5)]
     if square_number < 1 or square_number > 12:
-        return (0, 0)
-    return coordinates[square_number - 1]
+        return (initialX, initialY)
+    return (coordinates[square_number - 1][0] + initialX, coordinates[square_number - 1][1] + initialY)
 
 def main(args=None):
     rclpy.init(
