@@ -37,10 +37,11 @@ class Navigation(Node):
         self.x = 0.0; self.y = 0.0; self.yaw = 0.0; self.yawstart = 0.0
         self.lidar_front = 100.0; self.lidar_right = 100.0; self.lidar_left = 100.0
 
-        self.stop_dist = 0.5
-        self.wall_distance = 0.4
+        self.stop_dist = 0.4
+        self.wall_distance = 0.3
         self.angle_width = 30
         self.fwd_vel = 0.26
+        self.angular_vel = 1.82
 
         self.shutdown = False 
 
@@ -178,7 +179,7 @@ class Navigation(Node):
                 if rand_choice <= right_count:
                     self.spin_direction = -1                    
 
-            self.vel_cmd.angular.z = 0.5 * self.spin_direction
+            self.vel_cmd.angular.z = self.angular_vel * self.spin_direction
 
         else:
             self.choose_direction = True
@@ -186,9 +187,16 @@ class Navigation(Node):
             # move away from wall if too close
             dist_from_wall = min(self.lidar_left, self.lidar_right)
             if dist_from_wall < self.wall_distance:
-                error = self.wall_distance - dist_from_wall
+                error = (self.wall_distance - dist_from_wall) * 1.5
                 if self.lidar_left < self.lidar_right:
                     error *= -1
+
+                if error > 1.82:
+                    error = 1.82
+                elif error < -1.82:
+                    error = -1.82
+                    
+                print(error)
             else:
                 error = 0.0
             self.vel_cmd.angular.z = error
@@ -197,7 +205,8 @@ class Navigation(Node):
         self.vel_pub.publish(self.vel_cmd)
 
 def get_min_n_from_array(arr, n):
-    valid_data = arr[arr != float("inf")] 
+    valid_data = arr[arr != float("inf")]
+    valid_data = arr[arr != 0.0]
     # only get closest n obstacle degrees in range
     num_smallest = min(n, len(valid_data))
     closest = np.sort(valid_data)[:num_smallest]
