@@ -5,7 +5,7 @@ from rclpy.node import Node
 from rclpy.action import ActionClient 
 from rclpy.signals import SignalHandlerOptions
 
-from part5_actions.action import ExploreForward
+from com2009_team32_2025.action import ExploreForward
 
 class ExploreForwardClient(Node):
 
@@ -64,7 +64,7 @@ class ExploreForwardClient(Node):
             f"\nFEEDBACK:\n"
             f"  - Current distance travelled = {fdbk_current_distance_travelled:.2f} m."
         )
-        if self.stop or fdbk_current_distance_travelled >= 2:
+        if self.stop:
             future = self._goal_handle.cancel_goal_async()
             future.add_done_callback(self.cancel_goal)
             
@@ -82,7 +82,7 @@ def main(args=None):
         signal_handler_options=SignalHandlerOptions.NO
     )
     action_client = ExploreForwardClient()
-    future = action_client.send_goal(0.2, 0.5)
+    future = action_client.send_goal(0.1, 0.4)
     while not action_client.goal_succeeded:
         try:
             rclpy.spin_once(action_client)

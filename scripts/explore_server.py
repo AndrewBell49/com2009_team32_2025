@@ -5,35 +5,53 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer, GoalResponse, CancelResponse
 
+from com2009_team32_2025_modules.tb3_tools import quaternion_to_euler 
+
 # Import additional rclpy libraries for multithreading and shutdown
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.signals import SignalHandlerOptions
 
 # Import our package's action interface:
-from action import ExploreForward
+from com2009_team32_2025.action import ExploreForward
 # Import other key ROS interfaces that this server will use:
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 
 # Import some other useful Python Modules
-from math import sqrt, pow
+from math import pi, atan2, atan, sin, cos, sqrt, pow
 import numpy as np
+import random
 
 class ExploreForwardServer(Node):
 
     def __init__(self):
         super().__init__("explore_server")
 
-        self.posx = 0.0 
-        self.posy = 0.0
-        self.lidar_reading = 0.0
+        self.first_message = True
+
+        self.vel_cmd = Twist() 
+
+        self.x = 0.0; self.y = 0.0; self.yaw = 0.0; self.yawstart = 0.0
+        self.lidar_front_wide = 0.0
+        self.lidar_right = 0.0
+        self.lidar_right = 0.0
+        self.lidar_front = 0.0
+
+        self.wall_distance = 0.3
+
+        self.min_from_angle = 2*pi
 
         self.shutdown = False 
 
         self.await_odom = True 
         self.await_lidar = True
+
+        self.goalReached = False
+
+        self.spinning = False
+        self.atEdge = False
 
         self.loop_rate = self.create_rate(
             frequency=5, 
@@ -77,8 +95,20 @@ class ExploreForwardServer(Node):
         """
         pose = odom_msg.pose.pose
 
-        self.posx = pose.position.x 
-        self.posy = pose.position.y
+        (_, _, yaw) = quaternion_to_euler(pose.orientation) 
+
+        self.x = pose.position.x 
+        self.y = pose.position.y
+        self.yaw = yaw
+
+        if not self.first_message: 
+            self.first_message = True
+            self.xstart = self.x
+            self.ystart = self.y
+            self.yawstart = self.yaw
+        
+        self.yaw -= self.yawstart
+        self.yaw = ((self.yaw + pi) % (2 * pi)) - pi
 
         self.await_odom = False
 
@@ -87,17 +117,17 @@ class ExploreForwardServer(Node):
         Callback for the /scan subscriber
         """
 
-        left_20_deg = scan_msg.ranges[0:21]
-        right_20_deg = scan_msg.ranges[-20:] 
-        front = np.array(left_20_deg + right_20_deg) 
+        # checks for wide berth at front (for avoiding obstacles)
+        front_wide = np.array(scan_msg.ranges[0:41] + scan_msg.ranges[-40:] )
+        self.lidar_front_wide = get_min_n_from_array(front_wide, 2)
 
-        valid_data = front[front != float("inf")] 
-        if np.shape(valid_data)[0] > 0: 
-            single_point_average = valid_data.mean() 
-        else:
-            single_point_average = float("nan")
+        # narrower beam for front, because of closeness to edge
+        front = np.array(scan_msg.ranges[0:20] + scan_msg.ranges[-20:])
+        self.lidar_front = get_min_n_from_array(front, 10)
 
-        self.lidar_reading = single_point_average
+        # closest to right
+        right = np.array(scan_msg.ranges[260:280])
+        self.lidar_right = get_min_n_from_array(right, 2)
 
         self.await_lidar = False
 
@@ -130,10 +160,6 @@ class ExploreForwardServer(Node):
         self.shutdown = True
 
     def server_execution_callback(self, goal):
-        """
-        A callback to encapsulate the action that is performed
-        when the server is called (i.e. a valid goal is issued)
-        """
         result = ExploreForward.Result()
         feedback = ExploreForward.Feedback()
         fwd_vel = goal.request.fwd_velocity
@@ -149,20 +175,56 @@ class ExploreForwardServer(Node):
             f"\n#####\n")
 
         # set the robot's velocity (based on the request):
-        vel_cmd = Twist()
-        vel_cmd.linear.x = fwd_vel
+        self.vel_cmd.linear.x = fwd_vel
 
         # Get the robot's current position:
         while self.await_odom or self.await_lidar:
             continue
-        ref_posx = self.posx
-        ref_posy = self.posy
+            
+        ref_posx = self.x
+        ref_posy = self.y
         dist_travelled = 0.0
 
-        while self.lidar_reading > stop_dist:
+        while not self.goalReached:
 
-            vel_cmd.linear.x = fwd_vel
-            self.vel_pub.publish(vel_cmd)
+            # first, get to the edge
+            if not self.atEdge:
+
+                if (self.x >= (ref_posx + 2 - stop_dist) or
+                    self.x <= (ref_posx - 2 + stop_dist) or 
+                    self.y >= (ref_posy + 2 - stop_dist) or
+                    self.y <= (ref_posy - 2 + stop_dist)):
+
+                    self.atEdge = True
+
+                # start spinning if obsticle detected
+                if self.lidar_front_wide <= stop_dist:
+                    self.vel_cmd.linear.x = 0.0
+                    self.vel_cmd.angular.z = 0.5
+                # move forwawrd if
+                else:
+                    self.vel_cmd.linear.x = fwd_vel
+                    self.vel_cmd.angular.z = 0.0
+
+            # going round the edge
+            else:
+                print(f"{self.lidar_right:.2f}, {self.lidar_front_wide:.2f}")
+                if self.lidar_front_wide <= stop_dist:
+                    self.vel_cmd.linear.x = 0.0
+                    self.vel_cmd.angular.z = 0.3
+                elif self.lidar_right == float("nan"):
+                    self.vel_cmd.linear.x = fwd_vel
+                    self.vel_cmd.angular.z = 0.0
+                else:
+                    # error, in distance to wall (aim to keep even distance)
+                    error = self.wall_distance - self.lidar_right
+                    if error > 0.3:
+                        error = 0.3
+
+                    self.vel_cmd.linear.x = fwd_vel
+                    self.vel_cmd.angular.z = error
+            
+            self.vel_pub.publish(self.vel_cmd)
 
             # check if there has been a request to cancel the action:
             if goal.is_cancel_requested:
@@ -174,10 +236,10 @@ class ExploreForwardServer(Node):
                     f"Cancelled."
                 )
                 result.total_distance_travelled = dist_travelled
-                result.closest_obstacle = float(self.lidar_reading)
+                result.closest_obstacle = float(self.lidar_front_wide)
                 return result
 
-            dist_travelled = sqrt((ref_posx - self.posx)**2 + (ref_posy - self.posy)**2)
+            dist_travelled = sqrt((ref_posx - self.x)**2 + (ref_posy - self.y)**2)
 
             feedback.current_distance_travelled = dist_travelled
             goal.publish_feedback(feedback)
@@ -192,9 +254,19 @@ class ExploreForwardServer(Node):
         )
         goal.succeed()
         
-        result.total_distance_travelled = sqrt((ref_posx - self.posx)**2 + (ref_posy - self.posy)**2)
-        result.closest_obstacle = float(self.lidar_reading)
+        result.total_distance_travelled = sqrt((ref_posx - self.x)**2 + (ref_posy - self.y)**2)
+        result.closest_obstacle = float(self.lidar_front_wide)
         return result
+
+def get_min_n_from_array(arr, n):
+    valid_data = arr[arr != float("inf")] 
+    # only get closest n obstacle degrees in range
+    num_smallest = min(n, len(valid_data))
+    closest = np.sort(valid_data)[:num_smallest]
+    if np.shape(closest)[0] > 0: 
+        return closest.mean() 
+    else:
+        return float("nan")
 
 def main(args=None):
     rclpy.init(

@@ -38,6 +38,7 @@ install(PROGRAMS
   scripts/task2.py
   scripts/explore_client.py
   scripts/explore_server.py
+  scripts/explore_server_new.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

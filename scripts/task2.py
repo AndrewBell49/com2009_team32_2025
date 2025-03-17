@@ -78,7 +78,7 @@ class Navigation(Node):
 
     def timer_callback(self):
 
-        self.move_to_square(9)
+        self.move_to_square(1)
         # dist_from_start = euclid_dist(self.xstart, self.ystart, self.x, self.y)
 
         # # first time it is out of the start range
@@ -128,19 +128,20 @@ class Navigation(Node):
 
         self.vel_msg = Twist()
         
-        self.spin_to_angle(angle)
-
-        dist_from_start = euclid_dist(square_pos[0], square_pos[1], self.x, self.y)
-        print(f'Square: {square_pos[0]:.1f}, {square_pos[1]:.1f}')
-        print(f'Self:   {self.x:.1f}, {self.y:.1f}')
-        print(f'Dist:   {dist_from_start:.1f}')
-
-        if dist_from_start > 0.1:
-            self.vel_msg.linear.x = 0.0
+        if self.spinning:
+            self.spinning = self.spin_to_angle(angle)
         else:
-            self.vel_msg.linear.x = 0.0
+            dist_from_start = euclid_dist(square_pos[0], square_pos[1], self.x, self.y)
+            print(f'Square: {square_pos[0]:.1f}, {square_pos[1]:.1f}')
+            print(f'Self:   {self.x:.1f}, {self.y:.1f}')
+            print(f'Dist:   {dist_from_start:.1f}')
 
-        self.vel_pub.publish(self.vel_msg)
+            if dist_from_start > 0.1:
+                self.vel_msg.linear.x = 0.2
+            else:
+                self.vel_msg.linear.x = 0.0
+
+            self.vel_pub.publish(self.vel_msg)
 
     def spin_to_angle(self, angle):
 
@@ -149,13 +150,17 @@ class Navigation(Node):
 
         if abs(dTheta) < self.min_from_angle:
             self.min_from_angle = abs(dTheta)
-            self.vel_msg.angular.z = 1.0
+            self.vel_msg.angular.z = 0.5
 
             # anticlockwise is the fasted way to get there 
             if dTheta < 0:
                 self.vel_msg.angular.z *= -1
+            
+            return True
         else:
             self.vel_msg.angular.z = 0.0
+            return False
+
 
 
 def euclid_dist(x1, y1, x2, y2):
