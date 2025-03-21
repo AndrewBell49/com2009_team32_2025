@@ -38,8 +38,8 @@ class Navigation(Node):
         self.lidar_front = 100.0; self.lidar_right = 100.0; self.lidar_left = 100.0
 
         self.stop_dist = 0.4
-        self.wall_distance = 0.3
-        self.angle_width = 30
+        self.wall_distance = 0.4
+        self.angle_width = 25
         self.fwd_vel = 0.26
         self.angular_vel = 1.3
 
@@ -112,7 +112,7 @@ class Navigation(Node):
             print(f"Finished in: {time.time() - self.start}s")
 
         if not self.first_message and time.time() - self.start > 90:
-            print(f"Time up, visited: {len(self.coordinates)}")
+            print(f"Time up, visited: {12 - len(self.coordinates)}")
 
         if self.first_message: 
             self.first_message = False
@@ -188,7 +188,7 @@ class Navigation(Node):
             # move away from wall if too close
             dist_from_wall = min(self.lidar_left, self.lidar_right)
             if dist_from_wall < self.wall_distance:
-                error = (self.wall_distance - dist_from_wall) * -1.5
+                error = (self.wall_distance - dist_from_wall) * 1
                 if self.lidar_left < self.lidar_right:
                     error *= -1
 
@@ -214,7 +214,7 @@ def get_min_n_from_array(arr, n):
     else:
         return float("nan")
 
-def within_square(c1, c2, radius=0.25):
+def within_square(c1, c2, radius=0.3):
     if euclid_dist(c1[0], c1[1], c2[0], c2[1]) < radius:
         return True
     return False
