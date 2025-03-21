@@ -39,7 +39,7 @@ class Navigation(Node):
 
         self.stop_dist = 0.4
         self.wall_distance = 0.4
-        self.angle_width = 25
+        self.angle_width = 30
         self.fwd_vel = 0.26
         self.angular_vel = 1.3
 
@@ -105,22 +105,13 @@ class Navigation(Node):
         # once in square, remove from list need to visit
         for coord in self.coordinates:
             if within_square((self.x, self.y), coord):
-                print(f"Visited square: {coord}")
                 self.coordinates.remove(coord)
-        
-        if len(self.coordinates) == 0:
-            print(f"Finished in: {time.time() - self.start}s")
-
-        if not self.first_message and time.time() - self.start > 90:
-            print(f"Time up, visited: {12 - len(self.coordinates)}")
 
         if self.first_message: 
             self.first_message = False
             self.xstart = self.x
             self.ystart = self.y
             self.yawstart = self.yaw
-
-            self.start = time.time()
 
             # calculate center of squares, relative to starting pos
             for x in range(len(self.coordinates)):
@@ -188,7 +179,7 @@ class Navigation(Node):
             # move away from wall if too close
             dist_from_wall = min(self.lidar_left, self.lidar_right)
             if dist_from_wall < self.wall_distance:
-                error = (self.wall_distance - dist_from_wall) * 1
+                error = (self.wall_distance - dist_from_wall) * 2
                 if self.lidar_left < self.lidar_right:
                     error *= -1
 
@@ -215,9 +206,9 @@ def get_min_n_from_array(arr, n):
         return float("nan")
 
 def within_square(c1, c2, radius=0.3):
-    if euclid_dist(c1[0], c1[1], c2[0], c2[1]) < radius:
-        return True
-    return False
+    # if euclid_dist(c1[0], c1[1], c2[0], c2[1]) < radius:
+    #     return True
+    # return False
     if c2[0] < c1[0] - radius or c2[0] > c1[0] + radius or c2[1] < c1[1] - radius or c2[1] > c1[1] + radius:
         return False
     return True
