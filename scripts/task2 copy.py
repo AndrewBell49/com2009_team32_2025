@@ -41,7 +41,7 @@ class Navigation(Node):
         self.wall_distance = 0.3
         self.angle_width = 30
         self.fwd_vel = 0.26
-        self.angular_vel = 1.82
+        self.angular_vel = 1.3
 
         self.shutdown = False 
 
@@ -105,6 +105,7 @@ class Navigation(Node):
         # once in square, remove from list need to visit
         for coord in self.coordinates:
             if within_square((self.x, self.y), coord):
+                print(f"Visited square: {coord}")
                 self.coordinates.remove(coord)
         
         if len(self.coordinates) == 0:
@@ -215,7 +216,7 @@ def get_min_n_from_array(arr, n):
     else:
         return float("nan")
 
-def within_square(c1, c2, radius=0.5):
+def within_square(c1, c2, radius=0.25):
     if c2[0] < c1[0] - radius or c2[0] > c1[0] + radius or c2[1] < c1[1] - radius or c2[1] > c1[1] + radius:
         return False
     return True
