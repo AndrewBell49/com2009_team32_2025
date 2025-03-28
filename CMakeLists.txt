@@ -36,6 +36,8 @@ ament_python_install_package(${PROJECT_NAME}_modules)
 install(PROGRAMS
   scripts/task1.py
   scripts/task2.py
+  scripts/colour_search.py
+  scripts/object_detection.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
