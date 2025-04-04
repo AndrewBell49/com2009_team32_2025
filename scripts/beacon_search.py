@@ -2,7 +2,6 @@
 
 import rclpy
 from rclpy.node import Node
-from rclpy.signals import SignalHandlerOptions
 
 # Import image processing modules:
 import cv2
@@ -10,10 +9,9 @@ from cv_bridge import CvBridge, CvBridgeError
 
 # Import necessary ROS interface types:
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import Twist
 
 import os
-import numpy as np
+from pathlib import Path
 
 class BeaconSearch(Node):
 
@@ -22,7 +20,7 @@ class BeaconSearch(Node):
         
         self.camera_sub = self.create_subscription(
             msg_type=Image,
-            topic="/camera/image_raw",
+            topic="/camera/color/image_raw",
             callback=self.camera_callback,
             qos_profile=10
         )
@@ -44,11 +42,13 @@ class BeaconSearch(Node):
             self.lower_threshold = (101, 75, 100)
             self.upper_threshold = (126, 255, 255)
 
-        # percent of the screen that contains that colour, before a beacon is "detected"
-        self.percent_colour_detected = 0.1
-
         # most pixels of that colour detected
         self.highestm00 = 0
+
+        # percent of the edge that needs to be covered, to be "out of bounds" (too close)
+        self.edge_percent = 0.2
+        # pixels that count as on the edge of the camera
+        self.edge_pixels = 100
     
     def camera_callback(self, img_data):
         cvbridge_interface = CvBridge() 
@@ -62,13 +62,10 @@ class BeaconSearch(Node):
         height, width, _ = cv_img.shape
 
         crop_width = width - 100
-        crop_height = 200
+        crop_height = 250
         crop_z0 = int((width / 2) - (crop_width / 2))
         crop_y0 = int((height / 2) - (crop_height / 2))
         cropped_img = cv_img[crop_y0:crop_y0+crop_height, crop_z0:crop_z0+crop_width]
-        
-        cropped_height, cropped_width, _ = cropped_img.shape
-        total_pixels = cropped_width * cropped_height
 
         hsv_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2HSV)
 
@@ -77,23 +74,51 @@ class BeaconSearch(Node):
         # /255.0 in order to get number of total pixels detected
         m00 = m['m00']/255.0
 
-        # beacon is detected, and theres at least a 10% increase in pixels detected
-        if m00 > total_pixels*self.percent_colour_detected and m00 > self.highestm00*1.1:
+        # get the left and right hand bands of the image
+        left_side = cv_img[0:self.edge_pixels, 0:height]
+        hsv_left = cv2.cvtColor(left_side, cv2.COLOR_BGR2HSV)
+        mask_left = cv2.inRange(hsv_left, self.lower_threshold, self.upper_threshold)
+        m_left = cv2.moments(mask_left)
+        m00_left = m_left['m00']/255.0
+
+        right_side = cv_img[0:width, 0:height]
+        self.get_logger().info(f"{cv_img.shape}")
+        hsv_right = cv2.cvtColor(right_side, cv2.COLOR_BGR2HSV)
+        mask_right = cv2.inRange(hsv_right, self.lower_threshold, self.upper_threshold)
+        m_right = cv2.moments(mask_right)
+        m00_right = m_right['m00']/255.0
+
+        edge_height, edge_width, _ = left_side.shape
+        edge_size = edge_height * edge_width
+
+        if (m00_left > edge_size*self.edge_percent or m00_right > edge_size*self.edge_percent) and self.highestm00 > 0:
+            beacon_on_edge = True
+        else:
+            beacon_on_edge = False
+
+        # beacon is detected, and theres at least a 10% increase in pixels detected, and the beacon is not on the edge of the camera
+        if m00 > 0 and m00 > self.highestm00*1.1 and not beacon_on_edge:
             self.highestm00 = m00
             self.get_logger().info(f"Detected a beacon with {m00} pixels.")
             self.save_image(img = cv_img, img_name="target_beacon")
+        
+        cv2.imshow("camera image", cv_img)
+        cv2.waitKey(1)
             
     def save_image(self, img, img_name): 
         self.get_logger().info(f"Saving the image...")
 
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        parent_dir = os.path.dirname(current_dir)
-        image_path = f"{parent_dir}/snaps/{img_name}.jpg"
+        base_image_path = Path.home().joinpath("ros2_ws/src/com2009_team32_2025/snaps/")
+        base_image_path.mkdir(parents=True, exist_ok=True) 
 
-        cv2.imwrite(image_path, img) 
+        full_image_path = base_image_path.joinpath(
+            f"{img_name}.jpg")
+        self.get_logger().info(f"{full_image_path}")
+
+        cv2.imwrite(str(full_image_path), img) 
 
         self.get_logger().info(
-            f"\nSaved an image to '{image_path}'\n"
+            f"\nSaved an image to '{full_image_path}'\n"
             f"  - image dims: {img.shape[0]}x{img.shape[1]}px"
         ) 
             
