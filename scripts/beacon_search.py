@@ -75,14 +75,13 @@ class BeaconSearch(Node):
         m00 = m['m00']/255.0
 
         # get the left and right hand bands of the image
-        left_side = cv_img[0:self.edge_pixels, 0:height]
+        left_side = cv_img[0:height, 0:self.edge_pixels]
         hsv_left = cv2.cvtColor(left_side, cv2.COLOR_BGR2HSV)
         mask_left = cv2.inRange(hsv_left, self.lower_threshold, self.upper_threshold)
         m_left = cv2.moments(mask_left)
         m00_left = m_left['m00']/255.0
 
-        right_side = cv_img[0:width, 0:height]
-        self.get_logger().info(f"{cv_img.shape}")
+        right_side = cv_img[0:height, (width-self.edge_pixels):width]
         hsv_right = cv2.cvtColor(right_side, cv2.COLOR_BGR2HSV)
         mask_right = cv2.inRange(hsv_right, self.lower_threshold, self.upper_threshold)
         m_right = cv2.moments(mask_right)
@@ -93,8 +92,11 @@ class BeaconSearch(Node):
 
         if (m00_left > edge_size*self.edge_percent or m00_right > edge_size*self.edge_percent) and self.highestm00 > 0:
             beacon_on_edge = True
+            self.get_logger().info(f"Beacon on the edge")
         else:
             beacon_on_edge = False
+
+        self.get_logger().info(f"{m00}")
 
         # beacon is detected, and theres at least a 10% increase in pixels detected, and the beacon is not on the edge of the camera
         if m00 > 0 and m00 > self.highestm00*1.1 and not beacon_on_edge:
@@ -102,7 +104,9 @@ class BeaconSearch(Node):
             self.get_logger().info(f"Detected a beacon with {m00} pixels.")
             self.save_image(img = cv_img, img_name="target_beacon")
         
-        cv2.imshow("camera image", cv_img)
+        # cv2.imshow("camera image", cropped_img)
+        # cv2.imshow("right image", right_side)
+        # cv2.imshow("left image", left_side)
         cv2.waitKey(1)
             
     def save_image(self, img, img_name): 
