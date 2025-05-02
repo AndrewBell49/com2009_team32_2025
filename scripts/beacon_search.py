@@ -29,17 +29,21 @@ class BeaconSearch(Node):
         target_colour = self.get_parameter("target_colour").get_parameter_value().string_value
         self.get_logger().info(f"TARGET BEACON: Searching for {target_colour}.")
 
+        # fully sorted thresholds
         if target_colour == "yellow":
-            self.lower_threshold = (22, 75, 100)
-            self.upper_threshold = (32, 255, 255)
+            self.lower_threshold = (22, 120, 0)
+            self.upper_threshold = (32, 255, 200)
+        # needs more testing
         elif target_colour == "red":
-            self.lower_threshold = (0, 75, 100)
+            self.lower_threshold = (0, 75, 0)
             self.upper_threshold = (12, 255, 255)
+        # fully sorted
         elif target_colour == "green":
-            self.lower_threshold = (54, 75, 100)
-            self.upper_threshold = (90, 255, 255)
+            self.lower_threshold = (75, 100, 0)
+            self.upper_threshold = (88, 255, 255)
+        # needs more testing
         else: # blue
-            self.lower_threshold = (101, 75, 100)
+            self.lower_threshold = (101, 75, 0)
             self.upper_threshold = (126, 255, 255)
 
         # most pixels of that colour detected
@@ -92,11 +96,8 @@ class BeaconSearch(Node):
 
         if (m00_left > edge_size*self.edge_percent or m00_right > edge_size*self.edge_percent) and self.highestm00 > 0:
             beacon_on_edge = True
-            self.get_logger().info(f"Beacon on the edge")
         else:
             beacon_on_edge = False
-
-        self.get_logger().info(f"{m00}")
 
         # beacon is detected, and theres at least a 10% increase in pixels detected, and the beacon is not on the edge of the camera
         if m00 > 0 and m00 > self.highestm00*1.1 and not beacon_on_edge:
@@ -104,7 +105,8 @@ class BeaconSearch(Node):
             self.get_logger().info(f"Detected a beacon with {m00} pixels.")
             self.save_image(img = cv_img, img_name="target_beacon")
         
-        # cv2.imshow("camera image", cropped_img)
+        cv2.imshow("camera image", cv_img)
+        cv2.imshow("camera image", mask)
         # cv2.imshow("right image", right_side)
         # cv2.imshow("left image", left_side)
         cv2.waitKey(1)
