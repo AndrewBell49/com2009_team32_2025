@@ -22,7 +22,8 @@ def generate_launch_description():
         ),
         
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(cartographer_launch_path)
+            PythonLaunchDescriptionSource(cartographer_launch_path),
+            launch_arguments={'use_sim_time': 'false'}.items()
         ),
         
         IncludeLaunchDescription(
