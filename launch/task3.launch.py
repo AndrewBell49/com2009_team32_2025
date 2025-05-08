@@ -1,14 +1,46 @@
 from launch import LaunchDescription 
 from launch_ros.actions import Node 
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration 
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.substitutions import LaunchConfiguration
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
+import os
 
 def generate_launch_description(): 
+    # Get the cartographer launch file
+    cartographer_launch_dir = get_package_share_directory('tuos_simulations')
+    cartographer_launch_path = os.path.join(cartographer_launch_dir, 'launch', 'cartographer.launch.py')
+
+    # Get the map saver launch file
+    map_saver_launch_dir = get_package_share_directory('nav2_map_server')
+    map_saver_launch_path = os.path.join(map_saver_launch_dir, 'launch', 'map_saver_server.launch.py')
+
     return LaunchDescription([ 
         DeclareLaunchArgument(
             name='target_colour', 
             description="The colour of the beacon to search for (yellow|red|green|blue)."
         ),
+        
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(cartographer_launch_path)
+        ),
+        
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(map_saver_launch_path)
+        ),
+        
+        TimerAction(
+            period=4.0,
+            actions=[
+                Node(
+                    package='com2009_team32_2025',
+                    executable='map_saver_client.py',
+                    name='map_saver_client',
+                    output='screen'
+                )
+            ]
+        ),
+        
         Node( 
             package='com2009_team32_2025', 
             executable='beacon_search.py', 

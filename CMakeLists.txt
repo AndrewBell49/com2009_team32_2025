@@ -15,6 +15,13 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
 
 # Include Cpp "include" directory
 include_directories(include)
@@ -37,6 +44,7 @@ install(PROGRAMS
   scripts/task1.py
   scripts/task2.py
   scripts/beacon_search.py
+  scripts/map_saver_client.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
