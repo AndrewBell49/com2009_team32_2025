@@ -6,6 +6,7 @@ from nav2_msgs.srv import SaveMap
 from nav_msgs.msg import OccupancyGrid
 import argparse
 import os
+from pathlib import Path
 
 class MapSaverClient(Node):
     def __init__(self):
@@ -14,7 +15,7 @@ class MapSaverClient(Node):
         self.map_received = False
         
         # Set the exact maps directory path and map name
-        self.maps_dir = '/home/student/ros2_ws/src/com2009_team32_2025/maps'
+        self.maps_dir = Path.home().joinpath("ros2_ws/src/com2009_team32_2025/maps")
         self.map_path = os.path.join(self.maps_dir, 'arena_map')
         os.makedirs(self.maps_dir, exist_ok=True)
         

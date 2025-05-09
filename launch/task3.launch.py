@@ -23,7 +23,7 @@ def generate_launch_description():
         
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(cartographer_launch_path),
-            launch_arguments={'use_sim_time': 'false'}.items()
+            launch_arguments={'use_sim_time': 'true'}.items()
         ),
         
         IncludeLaunchDescription(
@@ -31,7 +31,7 @@ def generate_launch_description():
         ),
         
         TimerAction(
-            period=4.0,
+            period=5.0,
             actions=[
                 Node(
                     package='com2009_team32_2025',
