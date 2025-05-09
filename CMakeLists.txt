@@ -45,6 +45,7 @@ install(PROGRAMS
   scripts/task2.py
   scripts/beacon_search.py
   scripts/map_saver_client.py
+  scripts/exploration.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

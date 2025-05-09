@@ -62,10 +62,6 @@ class MapSaverClient(Node):
         request.free_thresh = 0.25
         request.occupied_thresh = 0.65
         
-        self.get_logger().info('Saving map as:')
-        self.get_logger().info(f'  - {self.map_path}.png')
-        self.get_logger().info(f'  - {self.map_path}.yaml')
-        
         # Send the async request
         future = self.client.call_async(request)
         future.add_done_callback(self.save_callback)

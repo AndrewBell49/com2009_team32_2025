@@ -15,6 +15,9 @@ def generate_launch_description():
     map_saver_launch_dir = get_package_share_directory('nav2_map_server')
     map_saver_launch_path = os.path.join(map_saver_launch_dir, 'launch', 'map_saver_server.launch.py')
 
+    online_async_launch_dir = get_package_share_directory('slam_toolbox')
+    online_async_launch_path = os.path.join(online_async_launch_dir, 'launch', 'online_async_launch.py')
+
     return LaunchDescription([ 
         DeclareLaunchArgument(
             name='target_colour', 
@@ -23,11 +26,16 @@ def generate_launch_description():
         
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(cartographer_launch_path),
-            launch_arguments={'use_sim_time': 'true'}.items()
+            launch_arguments={'use_sim_time': 'false'}.items()
         ),
         
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(map_saver_launch_path)
+        ),
+
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(online_async_launch_path),
+            launch_arguments={'use_sim_time': 'false'}.items()
         ),
         
         TimerAction(
@@ -47,5 +55,12 @@ def generate_launch_description():
             executable='beacon_search.py', 
             name='beacon_search',
             parameters=[{'target_colour': LaunchConfiguration('target_colour')}] 
-        )
+        ),
+
+        Node( 
+            package='com2009_team32_2025', 
+            executable='exploration.py', 
+            name='exploration'
+        )       
+
     ])
