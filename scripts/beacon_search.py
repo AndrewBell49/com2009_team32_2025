@@ -35,7 +35,7 @@ class BeaconSearch(Node):
             self.upper_threshold = (32, 255, 200)
         # needs more testing
         elif target_colour == "red":
-            self.lower_threshold = (0, 75, 0)
+            self.lower_threshold = (0, 150, 0)
             self.upper_threshold = (12, 255, 255)
         # fully sorted
         elif target_colour == "green":
@@ -43,7 +43,7 @@ class BeaconSearch(Node):
             self.upper_threshold = (88, 255, 255)
         # needs more testing
         else: # blue
-            self.lower_threshold = (101, 75, 0)
+            self.lower_threshold = (101, 100, 50)
             self.upper_threshold = (126, 255, 255)
 
         # most pixels of that colour detected
@@ -106,7 +106,7 @@ class BeaconSearch(Node):
             self.save_image(img = cv_img, img_name="target_beacon")
         
         cv2.imshow("camera image", cv_img)
-        cv2.imshow("camera image", mask)
+        cv2.imshow("mask image", mask)
         # cv2.imshow("right image", right_side)
         # cv2.imshow("left image", left_side)
         cv2.waitKey(1)
