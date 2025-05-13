@@ -34,7 +34,7 @@ class MapSaverClient(Node):
         while not self.client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Map saver service not available, waiting...')
         
-        self.get_logger().info('Waiting for map data to become available...')
+        # self.get_logger().info('Waiting for map data to become available...')
         
         # Create a timer to check if we've received map data
         self.init_timer = self.create_timer(1.0, self.init_timer_callback)
@@ -43,14 +43,14 @@ class MapSaverClient(Node):
     def map_callback(self, msg):
         if not self.map_received:
             self.map_received = True
-            self.get_logger().info('Map data received')
+            # self.get_logger().info('Map data received')
             
     def init_timer_callback(self):
         if self.map_received:
             self.init_timer.cancel()  # Stop the initialization timer
             # Start the periodic save timer
             self.save_timer = self.create_timer(5.0, self.save_map)
-            self.get_logger().info('Starting periodic map saves every 5 seconds...')
+            # self.get_logger().info('Starting periodic map saves every 5 seconds...')
         
     def save_map(self):
         # Create the request
@@ -69,10 +69,10 @@ class MapSaverClient(Node):
     def save_callback(self, future):
         try:
             response = future.result()
-            if response.result:
-                self.get_logger().info('Successfully saved map')
-            else:
-                self.get_logger().error('Failed to save map')
+            # if response.result:
+            #     self.get_logger().info('Successfully saved map')
+            # else:
+            #     self.get_logger().error('Failed to save map')
         except Exception as e:
             self.get_logger().error(f'Service call failed: {str(e)}')
 
