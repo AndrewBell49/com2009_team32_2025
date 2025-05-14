@@ -15,8 +15,9 @@ class MapSaverClient(Node):
         self.map_received = False
         
         # Set the exact maps directory path and map name
-        self.maps_dir = Path.home().joinpath("ros2_ws/src/com2009_team32_2025/maps")
-        self.map_path = os.path.join(self.maps_dir, 'arena_map')
+        self.maps_dir = "/home/student/ros2_ws/src/com2009_team32_2025/maps"
+        self.map_path = f"{self.maps_dir}/arena_map"
+        
         os.makedirs(self.maps_dir, exist_ok=True)
         
         # Subscribe to map topic to verify data is available

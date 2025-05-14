@@ -14,7 +14,7 @@ def generate_launch_description():
 
         # Suppress cartographer output
         ExecuteProcess(
-            cmd=['ros2', 'launch', 'tuos_simulations', 'cartographer.launch.py', 'use_sim_time:=false'],
+            cmd=['ros2', 'launch', 'turtlebot3_cartographer', 'cartographer.launch.py', 'use_sim_time:=false'],
             output='log'
         ),
 

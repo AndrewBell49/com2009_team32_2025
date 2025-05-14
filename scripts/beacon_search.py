@@ -103,13 +103,10 @@ class BeaconSearch(Node):
         cv2.waitKey(1)
             
     def save_image(self, img, img_name):
-        base_image_path = Path.home().joinpath("ros2_ws/src/com2009_team32_2025/snaps/")
-        base_image_path.mkdir(parents=True, exist_ok=True) 
+        folder = "/home/student/ros2_ws/src/com2009_team32_2025/snaps"
+        full_image_path = f"{folder}/{img_name}.jpg"
 
-        full_image_path = base_image_path.joinpath(
-            f"{img_name}.jpg")
-
-        cv2.imwrite(str(full_image_path), img) 
+        cv2.imwrite(full_image_path, img) 
             
 def main(args = None):
     rclpy.init(args = args)
