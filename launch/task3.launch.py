@@ -2,7 +2,6 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction
 from launch.substitutions import LaunchConfiguration
-import os
 
 def generate_launch_description():
     return LaunchDescription([
@@ -10,12 +9,6 @@ def generate_launch_description():
         DeclareLaunchArgument(
             name='target_colour',
             description="The colour of the beacon to search for (yellow|red|green|blue)."
-        ),
-
-        # Suppress cartographer output
-        ExecuteProcess(
-            cmd=['ros2', 'launch', 'turtlebot3_cartographer', 'cartographer.launch.py', 'use_sim_time:=false'],
-            output='log'
         ),
 
         # Suppress map saver output
@@ -50,7 +43,7 @@ def generate_launch_description():
             output='screen'
         ),
 
-        Node( 
+        Node(
             package='com2009_team32_2025', 
             executable='exploration.py', 
             name='exploration',

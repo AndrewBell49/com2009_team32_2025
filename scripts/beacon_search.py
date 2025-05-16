@@ -25,6 +25,11 @@ class BeaconSearch(Node):
             qos_profile=10
         )
 
+        self.camera_sub
+
+        self.latest_msg = None
+        self.timer = self.create_timer(1.0, self.process_image)
+
         self.declare_parameter("target_colour", "yellow")
         target_colour = self.get_parameter("target_colour").get_parameter_value().string_value
         self.get_logger().info(f"TARGET BEACON: Searching for {target_colour}.")
@@ -51,10 +56,14 @@ class BeaconSearch(Node):
         self.edge_pixels = 100
     
     def camera_callback(self, img_data):
+        self.latest_msg = img_data
+    
+    def process_image(self):
+
         cvbridge_interface = CvBridge() 
         try:
             cv_img = cvbridge_interface.imgmsg_to_cv2(
-                img_data, desired_encoding="bgr8"
+                self.latest_msg, desired_encoding="bgr8"
             )
         except CvBridgeError as e:
             self.get_logger().warning(f"{e}")
@@ -94,12 +103,18 @@ class BeaconSearch(Node):
             beacon_on_edge = True
         else:
             beacon_on_edge = False
+        
+        self.get_logger().info("Gettin immage")
 
         # beacon is detected, and theres at least a 10% increase in pixels detected, and the beacon is not on the edge of the camera
         if m00 > 0 and m00 > self.highestm00*1.1 and not beacon_on_edge:
             self.highestm00 = m00
             self.save_image(img = cv_img, img_name="target_beacon")
-        
+            if m00 > 700.0:
+                self.get_logger().info("Shutting down")
+                self.destroy_node()
+                rclpy.shutdown()
+
         cv2.waitKey(1)
             
     def save_image(self, img, img_name):
