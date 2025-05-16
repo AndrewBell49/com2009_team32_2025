@@ -18,6 +18,7 @@ from nav_msgs.msg import OccupancyGrid
 # Import some other useful Python Modules
 from math import pi, atan2, sqrt, hypot
 import numpy as np
+import random
 
 class Navigation(Node):
 
@@ -81,9 +82,9 @@ class Navigation(Node):
             callback=self.timer_callback,
         )
 
-        self.get_logger().info(
-            f"The '{self.get_name()}' node is initialised."
-        )
+        # self.get_logger().info(
+        #     f"The '{self.get_name()}' node is initialised."
+        # )
         
     def map_callback(self, msg):
         # self.get_logger().info("Map received!")
@@ -180,7 +181,11 @@ class Navigation(Node):
         # If too close to a wall in front, stop and rotate
         if self.lidar_front <= self.stop_dist:
             self.vel_cmd.linear.x = 0.0
-            self.vel_cmd.angular.z = self.angular_vel
+            rand_num = random.randint(0, 1)
+            if rand_num == 0:
+                self.vel_cmd.angular.z = self.angular_vel
+            else:
+                self.vel_cmd.angular.z = -1*self.angular_vel
             self.vel_pub.publish(self.vel_cmd)
             return
         # stop spinning

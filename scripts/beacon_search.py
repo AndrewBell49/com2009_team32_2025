@@ -28,7 +28,7 @@ class BeaconSearch(Node):
         self.camera_sub
 
         self.latest_msg = None
-        self.timer = self.create_timer(1.0, self.process_image)
+        self.timer = self.create_timer(1, self.process_image)
 
         self.declare_parameter("target_colour", "yellow")
         target_colour = self.get_parameter("target_colour").get_parameter_value().string_value
@@ -103,19 +103,17 @@ class BeaconSearch(Node):
             beacon_on_edge = True
         else:
             beacon_on_edge = False
-        
-        self.get_logger().info("Gettin immage")
 
         # beacon is detected, and theres at least a 10% increase in pixels detected, and the beacon is not on the edge of the camera
         if m00 > 0 and m00 > self.highestm00*1.1 and not beacon_on_edge:
             self.highestm00 = m00
             self.save_image(img = cv_img, img_name="target_beacon")
+
+            # shutdown if image is "good enough"
             if m00 > 700.0:
                 self.get_logger().info("Shutting down")
                 self.destroy_node()
                 rclpy.shutdown()
-
-        cv2.waitKey(1)
             
     def save_image(self, img, img_name):
         folder = "/home/student/ros2_ws/src/com2009_team32_2025/snaps"
