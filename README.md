@@ -21,11 +21,11 @@ source ~/.bashrc
 ```
 
 ## Functional Description
-When the launch file is launched with the `target_colour` parameter, [beacon_search.py](scripts/beacon_search.py) subscribes to the colour camera topic, and begins to process a cropped view of the camera, performing a mask, effectively getting the number of pixels that are the specified colour. When a large enough amount are found (compared with the last time), a photo is saved to [target_beacon.jpg](snaps/target_beacon.jpg). To ensure the full width of the beacon is captured, the left and right of the image are checked to not contain too much of the specified colour.
+When the launch file is launched with the `target_colour` parameter, [beacon_search.py](scripts/beacon_search.py) subscribes to the colour camera topic, and begins to process a cropped view of the camera, performing a mask, effectively getting the number of pixels that are the specified colour. When a large enough amount is found (compared with the last time), a photo is saved to [target_beacon.jpg](snaps/target_beacon.jpg). To ensure the full width of the beacon is captured, the left and right sides of the image are checked so as not to contain too much of the specified colour.
 
-Our application makes use of the SLAM toolbox for saving the map and for exploring the maze. SLAM constantly maps out the maze using the odometry and LIDAR sensor, and [map_saver_client.py](scripts/map_saver_client.py) saves this map every 5 seconds, by subscribing to the map saver in the package `nav2_map_server`.
+Our application makes use of the SLAM toolbox for saving the map and for exploring the maze. SLAM constantly maps out the maze using the odometry and LIDAR sensor, and [map_saver_client.py](scripts/map_saver_client.py) saves this map every 5 seconds, by subscribing to the map saver in the package `nav2_map_server`. The resulting image of the map will be saved to [arena_map.png](maps/arena_map.png)
 
-[exploration.py](scripts/exploration.py) makes use of the SLAM toolbox by using the map of the area provided. While the robot is moving, it is constantly checking the LIDAR sensor, checking that there are no obstacles too close to the front of it. If there are, then it makes sure to avoid them by stopping and rotating. When no obstacles are too close in front, it navs to the nearest frontier. It uses occupancy grid ...........
+[exploration.py](scripts/exploration.py) makes use of the SLAM toolbox by using the map of the area provided. While the robot is moving, it is constantly checking the LIDAR sensor, checking that there are no obstacles too close to the front of it. If there are, then it makes sure to avoid them by stopping and rotating. When no obstacles are too close in front, it navs to the nearest frontier. It uses an occupancy grid ...........
 
 ### Functional Block Diagram
 | ![Image of FBD](/FBD.png) |
