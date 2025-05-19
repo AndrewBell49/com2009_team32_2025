@@ -34,3 +34,4 @@ Our application makes use of the SLAM toolbox for saving the map and for explori
 
 ## Contributors
 * Andrew Bell - [GitHub](https://github.com/AndrewBell49)
+* Nathan Hutchings - [GitHub](https://github.com/NathanHuttch)
