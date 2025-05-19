@@ -25,7 +25,7 @@ When the launch file is launched with the `target_colour` parameter, [beacon_sea
 
 Our application makes use of the SLAM toolbox for saving the map and for exploring the maze. SLAM constantly maps out the maze using the odometry and LIDAR sensor, and [map_saver_client.py](scripts/map_saver_client.py) saves this map every 5 seconds, by subscribing to the map saver in the package `nav2_map_server`.
 
-[exploration.py](scripts/exploration.py) makes use of the SLAM toolbox by using the map of the area provided. While the robot is moving, it is constantly checking the LIDAR sensor, checking that there are no obstacles too close to the front of it. If there are, then it makes sure to avoid them by stopping and rotating. When no obstacles are too close in front, it navs to the nearest frontier....... MOAZ FILL IN PLEASE!!!
+[exploration.py](scripts/exploration.py) makes use of the SLAM toolbox by using the map of the area provided. While the robot is moving, it is constantly checking the LIDAR sensor, checking that there are no obstacles too close to the front of it. If there are, then it makes sure to avoid them by stopping and rotating. When no obstacles are too close in front, it navs to the nearest frontier. It uses occupancy grid ...........
 
 ### Functional Block Diagram
 | ![Image of FBD](/FBD.png) |
