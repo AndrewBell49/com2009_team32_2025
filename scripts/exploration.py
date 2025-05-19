@@ -82,12 +82,12 @@ class Navigation(Node):
             callback=self.timer_callback,
         )
 
-        # self.get_logger().info(
-        #     f"The '{self.get_name()}' node is initialised."
-        # )
+        self.get_logger().info(
+            f"The '{self.get_name()}' node is initialised."
+        )
         
     def map_callback(self, msg):
-        # self.get_logger().info("Map received!")
+        self.get_logger().info("Map received!")
         width = msg.info.width
         height = msg.info.height
         data = np.array(msg.data).reshape((height, width))
@@ -178,14 +178,24 @@ class Navigation(Node):
         if not hasattr(self, 'frontiers') or self.await_lidar or self.await_odom:
             return
         
+        goal = self.select_closest_frontier()
+        if goal:
+            goal_x, goal_y = goal
+        
         # If too close to a wall in front, stop and rotate
         if self.lidar_front <= self.stop_dist:
+            angle_to_goal = atan2(goal_y - self.y, goal_x - self.x)
+            angle_error = angle_to_goal - self.yaw
+
+            # Normalize angle error to [-pi, pi]
+            angle_error = (angle_error + pi) % (2 * pi) - pi
             self.vel_cmd.linear.x = 0.0
-            rand_num = random.randint(0, 1)
-            if rand_num == 0:
-                self.vel_cmd.angular.z = self.angular_vel
-            else:
+            self.get_logger().info(f"angle: {angle_error}")
+
+            if angle_error < 0:
                 self.vel_cmd.angular.z = -1*self.angular_vel
+            else:
+                self.vel_cmd.angular.z = self.angular_vel
             self.vel_pub.publish(self.vel_cmd)
             return
         # stop spinning
@@ -195,22 +205,19 @@ class Navigation(Node):
 
         # If no more frontiers, stop
         if not self.frontiers:
-            # self.get_logger().info("Exploration complete - no frontiers left.")
+            self.get_logger().info("Exploration complete - no frontiers left.")
             self.vel_cmd.linear.x = 0.0
             self.vel_cmd.angular.z = 0.0
             self.vel_pub.publish(self.vel_cmd)
             return
 
         # Get closest frontier point
-        goal = self.select_closest_frontier()
         if goal is None:
-            # self.get_logger().info("No reachable frontier found.")
+            self.get_logger().info("No reachable frontier found.")
             self.vel_cmd.linear.x = 0.0
             self.vel_cmd.angular.z = 0.0
             self.vel_pub.publish(self.vel_cmd)
             return
-
-        goal_x, goal_y = goal
 
         # Compute angle to goal
         angle_to_goal = atan2(goal_y - self.y, goal_x - self.x)
@@ -223,15 +230,15 @@ class Navigation(Node):
 
         # If close to goal, stop and wait for next map update
         if dist_to_goal < 0.3:
-            # self.get_logger().info(f"Reached frontier at ({goal_x:.2f}, {goal_y:.2f})")
+            self.get_logger().info(f"Reached frontier at ({goal_x:.2f}, {goal_y:.2f})")
 
             self.frontiers = [f for f in self.frontiers if sqrt((f[0] - goal_x)**2 + (f[1] - goal_y)**2) > 0.5]
 
             # If there are still frontiers, select the next closest one
             if self.frontiers:
-                # self.get_logger().info("Selecting next closest frontier.")
+                self.get_logger().info("Selecting next closest frontier.")
                 goal = self.select_closest_frontier()
-                # self.get_logger().info("goal: " + str(goal))
+                self.get_logger().info("goal: " + str(goal))
                 goal_x, goal_y = goal
 
                 # Compute angle to the next goal
@@ -241,10 +248,12 @@ class Navigation(Node):
                 # Normalize angle error to [-pi, pi]
                 angle_error = (angle_error + pi) % (2 * pi) - pi
 
+                
+
                 dist_to_goal = sqrt((goal_x - self.x) ** 2 + (goal_y - self.y) ** 2)
 
             else:
-                # self.get_logger().info("No more frontiers left to explore.")
+                self.get_logger().info("No more frontiers left to explore.")
                 self.vel_cmd.linear.x = 0.0
                 self.vel_cmd.angular.z = 0.0
                 self.vel_pub.publish(self.vel_cmd)

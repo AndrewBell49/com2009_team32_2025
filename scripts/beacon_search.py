@@ -109,11 +109,11 @@ class BeaconSearch(Node):
             self.highestm00 = m00
             self.save_image(img = cv_img, img_name="target_beacon")
 
-            # shutdown if image is "good enough"
-            if m00 > 700.0:
-                self.get_logger().info("Shutting down")
-                self.destroy_node()
-                rclpy.shutdown()
+            # # shutdown if image is "good enough"
+            # if m00 > 700.0:
+            #     self.get_logger().info("Shutting down")
+            #     self.destroy_node()
+            #     rclpy.shutdown()
             
     def save_image(self, img, img_name):
         folder = "/home/student/ros2_ws/src/com2009_team32_2025/snaps"
