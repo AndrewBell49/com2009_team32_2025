@@ -22,11 +22,6 @@ class BeaconSearch(Node):
             qos_profile=10
         )
 
-        # self.camera_sub
-
-        # self.latest_msg = None
-        # self.timer = self.create_timer(1, self.process_image)
-
         self.declare_parameter("target_colour", "yellow")
         target_colour = self.get_parameter("target_colour").get_parameter_value().string_value
         self.get_logger().info(f"TARGET BEACON: Searching for {target_colour}.")
@@ -53,15 +48,11 @@ class BeaconSearch(Node):
         self.edge_pixels = 100
     
     def camera_callback(self, img_data):
-        self.latest_msg = img_data
-        self.process_image()
-    
-    def process_image(self):
 
         cvbridge_interface = CvBridge() 
         try:
             cv_img = cvbridge_interface.imgmsg_to_cv2(
-                self.latest_msg, desired_encoding="bgr8"
+                img_data, desired_encoding="bgr8"
             )
         except CvBridgeError as e:
             self.get_logger().warning(f"{e}")

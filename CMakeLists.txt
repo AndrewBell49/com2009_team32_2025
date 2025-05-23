@@ -46,8 +46,6 @@ install(PROGRAMS
   scripts/beacon_search.py
   scripts/map_saver_client.py
   scripts/exploration.py
-  scripts/exploration2.py
-  scripts/exploration_monday.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
