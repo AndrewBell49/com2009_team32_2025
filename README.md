@@ -20,6 +20,11 @@ cd ~/ros2_ws/ && colcon build --packages-select com2009_team32_2025 --symlink-in
 source ~/.bashrc
 ```
 
+### Dependancies
+`rclpy` provides a way of interacting with ROS2, `rclpy.node` allows the program to create nodes in ROS2. `rclpy.action` allows us to access `CancelResponse`, and cancel the node.
+
+`cv2` is used to crop, mask, and find the moments of an image. `cv_bridge` can convert between and ROS images and OpenCV images. `sensor_msgs.msg.Image` is the message type, used for subscribing to the camera topic.
+
 ## Functional Description
 When the launch file is launched with the `target_colour` parameter, [beacon_search.py](scripts/beacon_search.py) subscribes to the colour camera topic, and begins to process a cropped view of the camera, performing a mask, effectively getting the number of pixels that are the specified colour. When a large enough amount is found (compared with the last time), a photo is saved to [target_beacon.jpg](snaps/target_beacon.jpg). To ensure the full width of the beacon is captured, the left and right sides of the image are checked so as not to contain too much of the specified colour.
 

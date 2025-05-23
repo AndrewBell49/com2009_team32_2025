@@ -2,11 +2,11 @@
 
 import rclpy
 from rclpy.node import Node
+
 from nav2_msgs.srv import SaveMap
 from nav_msgs.msg import OccupancyGrid
-import argparse
+
 import os
-from pathlib import Path
 
 class MapSaverClient(Node):
     def __init__(self):

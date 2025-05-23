@@ -45,7 +45,7 @@ def generate_launch_description():
 
         Node(
             package='com2009_team32_2025', 
-            executable='exploration.py', 
+            executable='exploration2.py', 
             name='exploration',
             output='screen'
         )   

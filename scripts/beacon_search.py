@@ -10,9 +10,6 @@ from cv_bridge import CvBridge, CvBridgeError
 # Import necessary ROS interface types:
 from sensor_msgs.msg import Image
 
-import os
-from pathlib import Path
-
 class BeaconSearch(Node):
 
     def __init__(self):
@@ -25,10 +22,10 @@ class BeaconSearch(Node):
             qos_profile=10
         )
 
-        self.camera_sub
+        # self.camera_sub
 
-        self.latest_msg = None
-        self.timer = self.create_timer(1, self.process_image)
+        # self.latest_msg = None
+        # self.timer = self.create_timer(1, self.process_image)
 
         self.declare_parameter("target_colour", "yellow")
         target_colour = self.get_parameter("target_colour").get_parameter_value().string_value
@@ -57,6 +54,7 @@ class BeaconSearch(Node):
     
     def camera_callback(self, img_data):
         self.latest_msg = img_data
+        self.process_image()
     
     def process_image(self):
 
