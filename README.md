@@ -21,16 +21,27 @@ source ~/.bashrc
 ```
 
 ### Dependancies
-`rclpy` provides a way of interacting with ROS2, `rclpy.node` allows the program to create nodes in ROS2. `rclpy.action` allows us to access `CancelResponse`, and cancel the node.
-
-`cv2` is used to crop, mask, and find the moments of an image. `cv_bridge` can convert between and ROS images and OpenCV images. `sensor_msgs.msg.Image` is the message type, used for subscribing to the camera topic.
+* `rclpy`
+* `cv2`
+* `cv_bridge`
+* `sensor_msgs`
+* `com2009_team32_2025_modules`
+    * custom package, including a formula for angles
+* `geometry_msgs`
+* `nav_msgs`
+* `nav2_msgs`
+* `sensor_msgs`
+* `math`
+* `numpy`
+* `random`
+* `os`
 
 ## Functional Description
 When the launch file is launched with the `target_colour` parameter, [beacon_search.py](scripts/beacon_search.py) subscribes to the colour camera topic, and begins to process a cropped view of the camera, performing a mask, effectively getting the number of pixels that are the specified colour. When a large enough amount is found (compared with the last time), a photo is saved to [target_beacon.jpg](snaps/target_beacon.jpg). To ensure the full width of the beacon is captured, the left and right sides of the image are checked so as not to contain too much of the specified colour.
 
 Our application makes use of the SLAM toolbox for saving the map and for exploring the maze. SLAM constantly maps out the maze using the odometry and LIDAR sensor, and [map_saver_client.py](scripts/map_saver_client.py) saves this map every 5 seconds, by subscribing to the map saver in the package `nav2_map_server`. The resulting image of the map will be saved to [arena_map.png](maps/arena_map.png)
 
-[exploration.py](scripts/exploration.py) makes use of the SLAM toolbox by using the map of the area provided. While the robot is moving, it is constantly checking the LIDAR sensor, checking that there are no obstacles too close to the front of it. If there are, then it makes sure to avoid them by stopping and rotating. When no obstacles are too close in front, it navs to the nearest frontier. It uses an occupancy grid ...........
+[exploration.py](scripts/exploration.py) makes use of the SLAM toolbox by using the map of the area provided. When no obstacles are too close in front, it navigates to the nearest frontier. To get the nearest frontier, it makes use of the occupancy grid. Basically, it subscribes to /map and retrieves the visualised map from the lidar sensors. This visualised map is retrieved as an array of 0’s, 100’s, and -1’s where each one represents free space, walls, and unexplored space respectively. It then filters out and takes the -1’s as frontiers, which goes through a loop to choose the closest frontier, with paramaters put in place so if the frontier is within 1 meter of the robot, then discard it and look for the closest one that is more than a meter way. First it check if there is a wall infront. If there is, then it stops, rotates and chooses to go the direction of the goal. But we also added a bit of randomness. Basically, there would also be a 33% chance that it does not go towards the goal. This decision was made after we saw for ourselves that the robot could get stuck in a room trying to get out to reach the next closest frontier. Moreover, when it is going to a frontier, it calculates the difference of yaw angle between the robot and where the goal is, and then it moves with an angle to the frontier. Once it is within 0.3 meters from the frontier, it takes it as a sign that the frontier is now reached and explored and searches for the next one.
 
 ### Functional Block Diagram
 | ![Image of FBD](/FBD.png) |
@@ -40,3 +51,5 @@ Our application makes use of the SLAM toolbox for saving the map and for explori
 ## Contributors
 * Andrew Bell - [GitHub](https://github.com/AndrewBell49)
 * Nathan Hutchings - [GitHub](https://github.com/NathanHuttch)
+* Moaz Elleithy - [GitHub](https://github.com/Moaz-Elleithy)
+* Edward Dale - [GitHub](https://github.com/Eduardo-3541)
