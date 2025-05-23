@@ -19,7 +19,7 @@ def generate_launch_description():
 
         # Suppress SLAM output
         ExecuteProcess(
-            cmd=['ros2', 'launch', 'slam_toolbox', 'online_async_launch.py', 'use_sim_time:=false'],
+            cmd=['ros2', 'launch', 'slam_toolbox', 'online_async_launch.py', 'use_sim_time:=true'],
             output='log'
         ),
 
@@ -48,5 +48,5 @@ def generate_launch_description():
             executable='exploration.py', 
             name='exploration',
             output='screen'
-        )   
+        )
     ])

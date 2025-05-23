@@ -47,7 +47,7 @@ class MapSaverClient(Node):
         if self.map_received:
             self.init_timer.cancel()  # Stop the initialization timer
             # Start the periodic save timer
-            self.save_timer = self.create_timer(50.0, self.save_map)
+            self.save_timer = self.create_timer(10.0, self.save_map)
         
     def save_map(self):
         # Create the request

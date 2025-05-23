@@ -17,7 +17,7 @@ class BeaconSearch(Node):
         
         self.camera_sub = self.create_subscription(
             msg_type=Image,
-            topic="/camera/color/image_raw",
+            topic="/camera/image_raw",
             callback=self.camera_callback,
             qos_profile=10
         )
@@ -26,24 +26,38 @@ class BeaconSearch(Node):
         target_colour = self.get_parameter("target_colour").get_parameter_value().string_value
         self.get_logger().info(f"TARGET BEACON: Searching for {target_colour}.")
 
+        # original threshold for real robot
+        # if target_colour == "yellow":
+        #     self.lower_threshold = (22, 120, 0)
+        #     self.upper_threshold = (32, 255, 200)
+        # elif target_colour == "red":
+        #     self.lower_threshold = (0, 150, 75)
+        #     self.upper_threshold = (12, 255, 255)
+        # elif target_colour == "green":
+        #     self.lower_threshold = (75, 100, 20)
+        #     self.upper_threshold = (88, 255, 255)
+        # else: # blue
+        #     self.lower_threshold = (101, 100, 50)
+        #     self.upper_threshold = (126, 255, 255)
+
         if target_colour == "yellow":
-            self.lower_threshold = (22, 120, 0)
-            self.upper_threshold = (32, 255, 200)
+            self.lower_threshold = (23, 120, 0)
+            self.upper_threshold = (35, 255, 255)
         elif target_colour == "red":
-            self.lower_threshold = (0, 150, 75)
-            self.upper_threshold = (12, 255, 255)
+            self.lower_threshold = (0, 150, 0)
+            self.upper_threshold = (10, 255, 255)
         elif target_colour == "green":
-            self.lower_threshold = (75, 100, 20)
-            self.upper_threshold = (88, 255, 255)
+            self.lower_threshold = (41, 100, 0)
+            self.upper_threshold = (64, 255, 255)
         else: # blue
-            self.lower_threshold = (101, 100, 50)
+            self.lower_threshold = (101, 100, 0)
             self.upper_threshold = (126, 255, 255)
 
         # most pixels of that colour detected
         self.highestm00 = 0
 
         # percent of the edge that needs to be covered, to be "out of bounds" (too close)
-        self.edge_percent = 0.2
+        self.edge_percent = 0.05
         # pixels that count as on the edge of the camera
         self.edge_pixels = 100
     
@@ -59,19 +73,13 @@ class BeaconSearch(Node):
 
         height, width, _ = cv_img.shape
 
-        crop_width = width - 100
-        crop_height = 250
-        crop_z0 = int((width / 2) - (crop_width / 2))
-        crop_y0 = int((height / 2) - (crop_height / 2))
-        cropped_img = cv_img[crop_y0:crop_y0+crop_height, crop_z0:crop_z0+crop_width]
-
-        hsv_img = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2HSV)
+        hsv_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2HSV)
 
         mask = cv2.inRange(hsv_img, self.lower_threshold, self.upper_threshold)
         m = cv2.moments(mask)
         # /255.0 in order to get number of total pixels detected
         m00 = m['m00']/255.0
-
+        
         # get the left and right hand bands of the image
         left_side = cv_img[0:height, 0:self.edge_pixels]
         hsv_left = cv2.cvtColor(left_side, cv2.COLOR_BGR2HSV)
@@ -88,7 +96,7 @@ class BeaconSearch(Node):
         edge_height, edge_width, _ = left_side.shape
         edge_size = edge_height * edge_width
 
-        if (m00_left > edge_size*self.edge_percent or m00_right > edge_size*self.edge_percent) and self.highestm00 > 0:
+        if m00_left > edge_size*self.edge_percent or m00_right > edge_size*self.edge_percent:
             beacon_on_edge = True
         else:
             beacon_on_edge = False

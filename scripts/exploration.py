@@ -31,11 +31,11 @@ class Navigation(Node):
         self.x = 0.0; self.y = 0.0; self.yaw = 0.0; self.yawstart = 0.0
         self.lidar_front = 100.0; self.lidar_right = 100.0; self.lidar_left = 100.0
 
-        self.stop_dist = 0.45
+        self.stop_dist = 0.4
         self.wall_distance = 0.4
         self.angle_width = 30
-        self.fwd_vel = 0.2
-        self.angular_vel = 1.0
+        self.fwd_vel = 0.16
+        self.angular_vel = 0.8
 
         self.shutdown = False
 
@@ -221,7 +221,7 @@ class Navigation(Node):
                 self.vel_cmd.angular.z = -0.2
             else:
                 self.vel_cmd.angular.z = 0.2
-            self.vel_cmd.linear.x = min(self.fwd_vel, dist_to_goal*2)
+            self.vel_cmd.linear.x = min(self.fwd_vel, dist_to_goal)
             self.vel_pub.publish(self.vel_cmd)
             return
 
@@ -274,7 +274,7 @@ class Navigation(Node):
                 return
 
         # Mix angle to goal with wall avoidance
-        self.vel_cmd.linear.x = min(self.fwd_vel, dist_to_goal*2)
+        self.vel_cmd.linear.x = min(self.fwd_vel, dist_to_goal)
         self.vel_cmd.angular.z = 0.3 * angle_error
 
         self.vel_pub.publish(self.vel_cmd)
