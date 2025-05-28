@@ -56,10 +56,16 @@ class BeaconSearch(Node):
         # most pixels of that colour detected
         self.highestm00 = 0
 
+        # was that colour detected on the edge
+        self.highest_on_edge = True
+        self.highestm00_edge = 0
+
         # percent of the edge that needs to be covered, to be "out of bounds" (too close)
-        self.edge_percent = 0.05
+        self.edge_percent = 0.01
         # pixels that count as on the edge of the camera
         self.edge_pixels = 100
+
+        self.shutdown = False
     
     def camera_callback(self, img_data):
 
@@ -96,27 +102,32 @@ class BeaconSearch(Node):
         edge_height, edge_width, _ = left_side.shape
         edge_size = edge_height * edge_width
 
+
         if m00_left > edge_size*self.edge_percent or m00_right > edge_size*self.edge_percent:
             beacon_on_edge = True
         else:
             beacon_on_edge = False
 
         # beacon is detected, and theres at least a 10% increase in pixels detected, and the beacon is not on the edge of the camera
-        if m00 > 0 and m00 > self.highestm00*1.1 and not beacon_on_edge:
-            self.highestm00 = m00
+        # or, if the beacon was on the edge, and there has been no previous beacon detected not on the edge
+        if ((m00 > 2000 and m00 > self.highestm00*1.1 and not beacon_on_edge) or 
+            (m00 > 0 and m00 > self.highestm00_edge*1.1 and beacon_on_edge and self.highest_on_edge)):
+            if beacon_on_edge:
+                self.highestm00_edge = m00
+            else:
+                self.highest_on_edge = False
+                self.highestm00 = m00
+                
             self.save_image(img = cv_img, img_name="target_beacon")
-
-            # # shutdown if image is "good enough"
-            # if m00 > 700.0:
-            #     self.get_logger().info("Shutting down")
-            #     self.destroy_node()
-            #     rclpy.shutdown()
             
     def save_image(self, img, img_name):
         folder = "/home/student/ros2_ws/src/com2009_team32_2025/snaps"
         full_image_path = f"{folder}/{img_name}.jpg"
 
         cv2.imwrite(full_image_path, img) 
+
+    def on_shutdown(self):
+        self.shutdown = True
             
 def main(args = None):
     rclpy.init(args = args)
@@ -128,6 +139,9 @@ def main(args = None):
             f"{node.get_name()} received a shutdown request (Ctrl+C)."
         )
     finally:
+        node.on_shutdown()
+        while not node.shutdown:
+            continue
         node.destroy_node()
         rclpy.shutdown()
 

@@ -30,12 +30,19 @@ class Navigation(Node):
 
         self.x = 0.0; self.y = 0.0; self.yaw = 0.0; self.yawstart = 0.0
         self.lidar_front = 100.0; self.lidar_right = 100.0; self.lidar_left = 100.0
+        self.lidar_front_wide = 100.0; self.lidar_back_wide = 100.0
 
         self.stop_dist = 0.4
         self.wall_distance = 0.4
+        self.very_close_dist = 0.25
+        self.narrow_dist = 0.7
+
         self.angle_width = 30
-        self.fwd_vel = 0.16
-        self.angular_vel = 0.8
+        self.narrow_angle_width = 10
+
+        self.fwd_vel = 0.26
+        self.angular_vel = 1.0
+        self.close_angular_vel = 0.5
 
         self.shutdown = False
 
@@ -43,7 +50,11 @@ class Navigation(Node):
         self.await_lidar = True
 
         self.turn_change = True
+        self.turn_change_front_and_back = True
         self.turn_direction = 1
+        self.rotating_away = False
+
+        self.visited_frontiers = []
 
         self.loop_rate = self.create_rate(
             frequency=5, 
@@ -113,13 +124,19 @@ class Navigation(Node):
 
         min_dist = float('inf')
         closest = None
+
         for x, y in self.frontiers:
             wx, wy = self.grid_to_world(x, y)
+
+            # skip that fronteir if it is too close to one already visited
+            if any(hypot(wx - vx, wy - vy) < 0.5 for vx, vy in self.visited_frontiers):
+                continue
+
             dist = hypot(wx - self.x, wy - self.y)
             if dist < min_dist and dist >= 1.0:
                 min_dist = dist
                 closest = (wx, wy)
-                
+        
         return closest
 
     def odom_callback(self, odom_msg: Odometry):
@@ -144,6 +161,10 @@ class Navigation(Node):
         front = np.array(scan_msg.ranges[0:self.angle_width] + scan_msg.ranges[-self.angle_width:] )
         self.lidar_front = get_min_n_from_array(front, 2)
 
+        # checks for narrow width at front (for stopping rotating)
+        front_narrow = np.array(scan_msg.ranges[0:self.narrow_angle_width] + scan_msg.ranges[-self.narrow_angle_width:] )
+        self.lidar_front_narrow = get_min_n_from_array(front_narrow, 2)
+
         # closest to right
         right = np.array(scan_msg.ranges[260:280])
         self.lidar_right = get_min_n_from_array(right, 2)
@@ -151,6 +172,12 @@ class Navigation(Node):
         # closest to left
         left = np.array(scan_msg.ranges[80:100])
         self.lidar_left = get_min_n_from_array(left, 2)
+
+        # single closest to the front and back, for very close collisions
+        front_wide = np.array(scan_msg.ranges[0:50] + scan_msg.ranges[-50:] )
+        self.lidar_front_wide = get_min_n_from_array(front_wide, 1)
+        back_wide = np.array(scan_msg.ranges[130:230])
+        self.lidar_back_wide = get_min_n_from_array(back_wide, 1)
 
         self.await_lidar = False
 
@@ -165,6 +192,7 @@ class Navigation(Node):
         """
         A method to stop the robot on shutdown
         """
+        self.get_logger().info("Stopping the robot")
         for i in range(5):
             self.vel_pub.publish(Twist())
         self.shutdown = True
@@ -173,6 +201,9 @@ class Navigation(Node):
         # Wait until map and lidar data are available
         if not hasattr(self, 'frontiers') or self.await_lidar or self.await_odom:
             return
+
+        dist_to_goal = 0.0
+        angle_error = 0.0
         
         goal = self.select_closest_frontier()
         if goal:
@@ -184,15 +215,45 @@ class Navigation(Node):
             angle_error = (angle_error + pi) % (2 * pi) - pi
             dist_to_goal = sqrt((goal_x - self.x) ** 2 + (goal_y - self.y) ** 2)
 
-        
+        # Rotate if very close to the front and back
+        if self.lidar_front_wide <= self.very_close_dist and self.lidar_back_wide <= self.very_close_dist:
+
+            # only set direction of turn, at the start of a wall detection
+            if self.turn_change_front_and_back:
+                self.close_angular_vel = self.angular_vel * 0.5
+                # closer to the left, turn away
+                if self.lidar_right > self.lidar_left:
+                    self.close_angular_vel *= -1
+                
+                self.turn_change_front_and_back = False
+
+            self.vel_cmd.linear.x = 0.0
+            self.vel_cmd.angular.z = self.close_angular_vel
+            self.vel_pub.publish(self.vel_cmd)
+            return
+        else:
+            self.turn_change_front_and_back = True
+
+        # Reverse if very close to the front
+        if self.lidar_front <= self.very_close_dist:
+
+            self.vel_cmd.linear.x = -0.15
+            self.vel_cmd.angular.z = 0.0
+            self.vel_pub.publish(self.vel_cmd)
+            return
+
+
         # If too close to a wall in front, stop and rotate
         if self.lidar_front <= self.stop_dist:
 
+            # start rotating (if block below)
+            self.rotating_away = True
+
             # only set direction of turn, at the start of a wall detection
             if self.turn_change:
-                rand_num = random.randint(0, 2)
+                rand_num = random.randint(0, 3)
                 if angle_error <= 0:
-                    # 33% chance of going in the "wrong" directions (so it doesn't get stuck)
+                    # 25% chance of going in the "wrong" directions (so it doesn't get stuck)
                     if rand_num == 0:
                         self.turn_direction = 0.5
                     else:
@@ -205,36 +266,46 @@ class Navigation(Node):
                         self.turn_direction = 0.5
                 self.turn_change = False
             
-            self.vel_cmd.linear.x = 0.0
-            self.vel_cmd.angular.z = self.turn_direction*self.angular_vel
-
-            self.vel_pub.publish(self.vel_cmd)
-            return
         else:
-            self.turn_change = True            
+            self.turn_change = True
         
-        # Move away from wall if too close
+        if self.rotating_away:
+            
+            # stop rotating, if no close object in the narrow front
+            if self.lidar_front_narrow > self.narrow_dist and self.lidar_front > self.stop_dist:
+                self.rotating_away = False
+            else:
+                self.vel_cmd.linear.x = 0.0
+                self.vel_cmd.angular.z = self.turn_direction*self.angular_vel
+
+                self.vel_pub.publish(self.vel_cmd)
+                return   
+        
+        # Move away from wall if too close, and towards the wall if slightly far away
         dist_from_wall = min(self.lidar_left, self.lidar_right)
         if dist_from_wall < self.wall_distance:
-            error = (self.wall_distance - dist_from_wall) * 2
+
+            # aim for 0.65*self.wall_distance away from wall - towards if further away, away if nearer
+            angular_vel_error = ((self.wall_distance*0.65) - dist_from_wall)
+            
             if self.lidar_left < self.lidar_right:
-                self.vel_cmd.angular.z = -0.2
+                self.vel_cmd.angular.z = -1 * angular_vel_error
             else:
-                self.vel_cmd.angular.z = 0.2
+                self.vel_cmd.angular.z = angular_vel_error
             self.vel_cmd.linear.x = min(self.fwd_vel, dist_to_goal)
             self.vel_pub.publish(self.vel_cmd)
             return
 
-        # If no more frontiers, stop
+        # If no more frontiers, slowly forward
         if not self.frontiers:
-            self.vel_cmd.linear.x = 0.0
+            self.vel_cmd.linear.x = 0.2
             self.vel_cmd.angular.z = 0.0
             self.vel_pub.publish(self.vel_cmd)
             return
 
         # Get closest frontier point
         if goal is None:
-            self.vel_cmd.linear.x = 0.0
+            self.vel_cmd.linear.x = 0.2
             self.vel_cmd.angular.z = 0.0
             self.vel_pub.publish(self.vel_cmd)
             return
@@ -246,10 +317,10 @@ class Navigation(Node):
         # Normalize angle error to [-pi, pi]
         angle_error = (angle_error + pi) % (2 * pi) - pi
 
-        dist_to_goal = sqrt((goal_x - self.x) ** 2 + (goal_y - self.y) ** 2)
-
         # If close to goal, stop and wait for next map update
         if dist_to_goal < 0.3:
+
+            self.visited_frontiers.append((goal_x, goal_y))
 
             self.frontiers = [f for f in self.frontiers if sqrt((f[0] - goal_x)**2 + (f[1] - goal_y)**2) > 0.5]
 
